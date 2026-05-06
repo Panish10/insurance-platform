@@ -7,6 +7,7 @@ import com.insurance.user.dto.request.RegisterRequest;
 import com.insurance.user.dto.response.AuthResponse;
 import com.insurance.user.dto.response.UserResponse;
 import com.insurance.user.entity.User;
+import com.insurance.user.enums.Role;
 import com.insurance.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +44,7 @@ public class UserService {
                 .email(request.getEmail().toLowerCase().trim())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .phoneNumber(request.getPhoneNumber())
-                .role(request.getRole())
+                .role(request.getRole() != null ? request.getRole() : Role.ROLE_CUSTOMER)
                 .enabled(true)
                 .build();
 

@@ -34,5 +34,9 @@ public class RegisterRequest {
     @Pattern(regexp = "^\\+?[1-9]\\d{9,14}$", message = "Invalid phone number")
     private String phoneNumber;
 
-    private Role role = Role.ROLE_CUSTOMER;
+    private Role role;
+
+    public Role getRole() {
+        return role == null ? Role.ROLE_CUSTOMER : role;
+    }
 }
