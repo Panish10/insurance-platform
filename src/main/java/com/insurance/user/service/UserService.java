@@ -9,6 +9,7 @@ import com.insurance.user.dto.response.UserResponse;
 import com.insurance.user.entity.User;
 import com.insurance.user.enums.Role;
 import com.insurance.user.repository.UserRepository;
+import com.insurance.user.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Transactional
     public UserResponse register(RegisterRequest request) {
@@ -72,8 +74,19 @@ public class UserService {
         }
 
         log.info("User logged in successfully: {}", user.getId());
+        String token = jwtService.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
+
         UserResponse userResponse = mapToUserResponse(user);
-        return AuthResponse.of(userResponse);
+
+        return AuthResponse.builder()
+                .accessToken(token)
+                .tokenType("Bearer")
+                .expiresIn(86400)
+                .user(userResponse)
+                .build();
     }
 
     @Transactional(readOnly = true)
