@@ -1,134 +1,178 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  IconButton,
+  Menu,
+  MenuItem,
+  Avatar,
+  Chip,
+  Divider,
+} from "@mui/material";
+import {
+  Shield,
+  KeyboardArrowDown,
+  Logout,
+  Dashboard,
+  Policy,
+  Assignment,
+  People,
+} from "@mui/icons-material";
 import { useAuth } from "../../context/AuthContext";
 
 const Navbar = () => {
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
+  const customerLinks = [
+    {
+      label: "Dashboard",
+      path: "/customer/dashboard",
+      icon: <Dashboard fontSize="small" />,
+    },
+    {
+      label: "Policies",
+      path: "/customer/policies",
+      icon: <Policy fontSize="small" />,
+    },
+    {
+      label: "My Policies",
+      path: "/customer/my-policies",
+      icon: <Assignment fontSize="small" />,
+    },
+    {
+      label: "My Claims",
+      path: "/customer/claims",
+      icon: <Assignment fontSize="small" />,
+    },
+  ];
+
+  const adminLinks = [
+    {
+      label: "Dashboard",
+      path: "/admin/dashboard",
+      icon: <Dashboard fontSize="small" />,
+    },
+    {
+      label: "Policies",
+      path: "/admin/policies",
+      icon: <Policy fontSize="small" />,
+    },
+    {
+      label: "Claims",
+      path: "/admin/claims",
+      icon: <Assignment fontSize="small" />,
+    },
+    { label: "Users", path: "/admin/users", icon: <People fontSize="small" /> },
+  ];
+
+  const links = isAdmin() ? adminLinks : customerLinks;
+
   return (
-    <nav style={styles.nav}>
-      <div style={styles.logo}>🛡️ InsuranceApp</div>
+    <AppBar position="sticky" sx={{ backgroundColor: "#1e293b" }}>
+      <Toolbar sx={{ justifyContent: "space-between" }}>
+        {/* Logo */}
+        <Box display="flex" alignItems="center" gap={1}>
+          <Shield sx={{ color: "#60a5fa" }} />
+          <Typography
+            variant="h6"
+            sx={{ color: "#60a5fa", fontWeight: 700, letterSpacing: 0.5 }}
+          >
+            InsuranceApp
+          </Typography>
+        </Box>
 
-      <div style={styles.links}>
+        {/* Nav Links */}
         {user && (
-          <>
-            {isAdmin() ? (
-              <>
-                <Link to="/admin/dashboard" style={styles.link}>
-                  Dashboard
-                </Link>
-                <Link to="/admin/policies" style={styles.link}>
-                  Policies
-                </Link>
-                <Link to="/admin/claims" style={styles.link}>
-                  Claims
-                </Link>
-                <Link to="/admin/users" style={styles.link}>
-                  Users
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link to="/customer/dashboard" style={styles.link}>
-                  Dashboard
-                </Link>
-                <Link to="/customer/policies" style={styles.link}>
-                  Policies
-                </Link>
-                <Link to="/customer/my-policies" style={styles.link}>
-                  My Policies
-                </Link>
-                <Link to="/customer/claims" style={styles.link}>
-                  My Claims
-                </Link>
-              </>
-            )}
-          </>
+          <Box display="flex" gap={0.5}>
+            {links.map((link) => (
+              <Button
+                key={link.path}
+                component={Link}
+                to={link.path}
+                startIcon={link.icon}
+                sx={{
+                  color: "#cbd5e1",
+                  "&:hover": { backgroundColor: "#334155", color: "white" },
+                }}
+              >
+                {link.label}
+              </Button>
+            ))}
+          </Box>
         )}
-      </div>
 
-      <div style={styles.userSection}>
+        {/* User Section */}
         {user && (
-          <>
-            <span style={styles.userName}>
-              👤 {user.firstName} {user.lastName}
-            </span>
-            <span style={styles.role}>
-              {isAdmin() ? "🔑 Admin" : "👥 Customer"}
-            </span>
-            <button onClick={handleLogout} style={styles.logoutBtn}>
-              Logout
-            </button>
-          </>
+          <Box display="flex" alignItems="center" gap={1.5}>
+            <Chip
+              label={isAdmin() ? "Admin" : "Customer"}
+              size="small"
+              color={isAdmin() ? "error" : "primary"}
+              variant="outlined"
+              sx={{ color: "white", borderColor: "rgba(255,255,255,0.3)" }}
+            />
+
+            <Box
+              display="flex"
+              alignItems="center"
+              gap={0.5}
+              sx={{ cursor: "pointer" }}
+              onClick={(e) => setAnchorEl(e.currentTarget)}
+            >
+              <Avatar
+                sx={{
+                  width: 34,
+                  height: 34,
+                  bgcolor: "#2563eb",
+                  fontSize: "14px",
+                }}
+              >
+                {user.firstName?.[0]}
+                {user.lastName?.[0]}
+              </Avatar>
+              <Typography variant="body2" sx={{ color: "#e2e8f0" }}>
+                {user.firstName}
+              </Typography>
+              <KeyboardArrowDown sx={{ color: "#94a3b8", fontSize: 18 }} />
+            </Box>
+
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={() => setAnchorEl(null)}
+              transformOrigin={{ horizontal: "right", vertical: "top" }}
+              anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
+            >
+              <MenuItem disabled>
+                <Typography variant="body2" color="text.secondary">
+                  {user.email}
+                </Typography>
+              </MenuItem>
+              <Divider />
+              <MenuItem
+                onClick={handleLogout}
+                sx={{ color: "error.main", gap: 1 }}
+              >
+                <Logout fontSize="small" />
+                Logout
+              </MenuItem>
+            </Menu>
+          </Box>
         )}
-      </div>
-    </nav>
+      </Toolbar>
+    </AppBar>
   );
-};
-
-const styles = {
-  nav: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 24px",
-    height: "60px",
-    backgroundColor: "#1e293b",
-    color: "white",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-    position: "sticky",
-    top: 0,
-    zIndex: 1000,
-  },
-  logo: {
-    fontSize: "20px",
-    fontWeight: "700",
-    color: "#60a5fa",
-    textDecoration: "none",
-  },
-  links: {
-    display: "flex",
-    gap: "8px",
-  },
-  link: {
-    color: "#cbd5e1",
-    textDecoration: "none",
-    padding: "6px 12px",
-    borderRadius: "6px",
-    fontSize: "14px",
-    transition: "background 0.2s",
-  },
-  userSection: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  },
-  userName: {
-    fontSize: "14px",
-    color: "#e2e8f0",
-  },
-  role: {
-    fontSize: "12px",
-    padding: "3px 8px",
-    backgroundColor: "#334155",
-    borderRadius: "12px",
-    color: "#94a3b8",
-  },
-  logoutBtn: {
-    padding: "6px 14px",
-    backgroundColor: "#dc2626",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: "13px",
-  },
 };
 
 export default Navbar;

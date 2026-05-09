@@ -1,5 +1,38 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Chip,
+  Alert,
+  CircularProgress,
+  Divider,
+} from "@mui/material";
+import { Policy } from "@mui/icons-material";
 import { getMyPolicies } from "../../api/policyApi";
+
+const getStatusColor = (status) => {
+  const map = {
+    ACTIVE: "success",
+    EXPIRED: "error",
+    CANCELLED: "default",
+    PENDING: "warning",
+  };
+  return map[status] || "default";
+};
+
+const getPolicyTypeColor = (type) => {
+  const map = {
+    HEALTH: "#2e7d32",
+    VEHICLE: "#1976d2",
+    HOME: "#ed6c02",
+    TRAVEL: "#9c27b0",
+    LIFE: "#d32f2f",
+  };
+  return map[type] || "#1976d2";
+};
 
 const MyPolicies = () => {
   const [myPolicies, setMyPolicies] = useState([]);
@@ -14,135 +47,171 @@ const MyPolicies = () => {
     try {
       const res = await getMyPolicies();
       setMyPolicies(res.data.data || []);
-    } catch (err) {
+    } catch {
       setError("Failed to load your policies");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="loading">Loading your policies...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <div style={styles.container}>
-      <div className="page-header">
-        <h1 className="page-title">My Policies</h1>
-        <span style={styles.count}>{myPolicies.length} total</span>
-      </div>
+    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box
+        display="flex"
+        alignItems="center"
+        justifyContent="space-between"
+        mb={3}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          My Policies
+        </Typography>
+        <Chip
+          label={`${myPolicies.length} total`}
+          color="primary"
+          variant="outlined"
+        />
+      </Box>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       {myPolicies.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <h3>No policies yet</h3>
-            <p>Go to Policies page to subscribe to a plan</p>
-          </div>
-        </div>
+        <Card>
+          <CardContent sx={{ textAlign: "center", py: 6 }}>
+            <Policy sx={{ fontSize: 60, color: "text.disabled", mb: 2 }} />
+            <Typography variant="h6" color="text.secondary">
+              No policies yet
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Go to Policies page to subscribe to a plan
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid-2">
-          {myPolicies.map((up) => (
-            <div key={up.id} style={styles.card}>
-              <div style={styles.cardHeader}>
-                <h3 style={styles.policyName}>{up.policy?.name}</h3>
-                <span
-                  className={`badge ${
-                    up.status === "ACTIVE"
-                      ? "badge-success"
-                      : up.status === "EXPIRED"
-                        ? "badge-danger"
-                        : up.status === "CANCELLED"
-                          ? "badge-gray"
-                          : "badge-warning"
-                  }`}
+        <Grid container spacing={3}>
+          {myPolicies.map((up) => {
+            const color = getPolicyTypeColor(up.policy?.policyType);
+            return (
+              <Grid item xs={12} sm={6} md={4} key={up.id}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    borderTop: `4px solid ${color}`,
+                    "&:hover": { boxShadow: 4 },
+                  }}
                 >
-                  {up.status}
-                </span>
-              </div>
+                  <CardContent>
+                    {/* Header */}
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={1.5}
+                    >
+                      <Typography
+                        variant="h6"
+                        fontWeight={600}
+                        sx={{ flex: 1, pr: 1 }}
+                      >
+                        {up.policy?.name}
+                      </Typography>
+                      <Chip
+                        label={up.status}
+                        size="small"
+                        color={getStatusColor(up.status)}
+                      />
+                    </Box>
 
-              <div style={styles.typeRow}>
-                <span className="badge badge-info">
-                  {up.policy?.policyType}
-                </span>
-              </div>
+                    {/* Type chip */}
+                    <Chip
+                      label={up.policy?.policyType}
+                      size="small"
+                      sx={{
+                        mb: 2,
+                        backgroundColor: `${color}15`,
+                        color,
+                        fontWeight: 600,
+                      }}
+                    />
 
-              <div style={styles.details}>
-                <div style={styles.detailRow}>
-                  <span style={styles.label}>Monthly Premium</span>
-                  <span style={styles.value}>₹{up.policy?.premium}</span>
-                </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.label}>Coverage Amount</span>
-                  <span style={styles.value}>₹{up.policy?.coverageAmount}</span>
-                </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.label}>Duration</span>
-                  <span style={styles.value}>
-                    {up.policy?.durationMonths} months
-                  </span>
-                </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.label}>Start Date</span>
-                  <span style={styles.value}>
-                    {new Date(up.startDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.label}>End Date</span>
-                  <span style={styles.value}>
-                    {up.endDate
-                      ? new Date(up.endDate).toLocaleDateString()
-                      : "N/A"}
-                  </span>
-                </div>
-                <div style={styles.detailRow}>
-                  <span style={styles.label}>Subscribed On</span>
-                  <span style={styles.value}>
-                    {new Date(up.subscribedAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+                    <Divider sx={{ mb: 2 }} />
+
+                    {/* Details */}
+                    <Box display="flex" flexDirection="column" gap={1.2}>
+                      {[
+                        {
+                          label: "Monthly Premium",
+                          value: `₹${up.policy?.premium}`,
+                        },
+                        {
+                          label: "Coverage Amount",
+                          value: `₹${up.policy?.coverageAmount}`,
+                        },
+                        {
+                          label: "Duration",
+                          value: `${up.policy?.durationMonths} months`,
+                        },
+                        {
+                          label: "Start Date",
+                          value: new Date(up.startDate).toLocaleDateString(),
+                        },
+                        {
+                          label: "End Date",
+                          value: up.endDate
+                            ? new Date(up.endDate).toLocaleDateString()
+                            : "N/A",
+                        },
+                        {
+                          label: "Subscribed On",
+                          value: new Date(up.subscribedAt).toLocaleDateString(),
+                        },
+                      ].map((item) => (
+                        <Box
+                          key={item.label}
+                          display="flex"
+                          justifyContent="space-between"
+                          alignItems="center"
+                          sx={{
+                            pb: 1,
+                            borderBottom: "1px solid",
+                            borderColor: "divider",
+                            "&:last-child": { borderBottom: "none", pb: 0 },
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary">
+                            {item.label}
+                          </Typography>
+                          <Typography variant="body2" fontWeight={600}>
+                            {item.value}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
       )}
-    </div>
+    </Box>
   );
-};
-
-const styles = {
-  container: { padding: "24px", maxWidth: "1200px", margin: "0 auto" },
-  count: {
-    backgroundColor: "#e2e8f0",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    fontSize: "14px",
-    color: "#475569",
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "24px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    border: "1px solid #e2e8f0",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "10px",
-  },
-  policyName: { fontSize: "17px", fontWeight: "600", color: "#1e293b" },
-  typeRow: { marginBottom: "16px" },
-  details: { display: "flex", flexDirection: "column", gap: "10px" },
-  detailRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    paddingBottom: "8px",
-    borderBottom: "1px solid #f1f5f9",
-  },
-  label: { fontSize: "13px", color: "#64748b" },
-  value: { fontSize: "14px", fontWeight: "500", color: "#1e293b" },
 };
 
 export default MyPolicies;

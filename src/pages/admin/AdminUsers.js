@@ -1,5 +1,54 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Alert,
+  TextField,
+  Avatar,
+  InputAdornment,
+  ToggleButton,
+  ToggleButtonGroup,
+  CircularProgress,
+} from "@mui/material";
+import { Search, People } from "@mui/icons-material";
 import { getAllUsers } from "../../api/authApi";
+
+const getRoleColor = (role) => {
+  const map = {
+    ROLE_ADMIN: "error",
+    ROLE_CUSTOMER: "info",
+    ROLE_AGENT: "warning",
+  };
+  return map[role] || "default";
+};
+
+const getRoleLabel = (role) => {
+  const map = {
+    ROLE_ADMIN: "Admin",
+    ROLE_CUSTOMER: "Customer",
+    ROLE_AGENT: "Agent",
+  };
+  return map[role] || role;
+};
+
+const stringToColor = (str) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const color = Math.abs(hash).toString(16).padStart(6, "0").slice(0, 6);
+  return `#${color}`;
+};
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -16,7 +65,7 @@ const AdminUsers = () => {
     try {
       const res = await getAllUsers();
       setUsers(res.data.data || []);
-    } catch (err) {
+    } catch {
       setError("Failed to load users");
     } finally {
       setLoading(false);
@@ -28,187 +77,165 @@ const AdminUsers = () => {
       user.firstName.toLowerCase().includes(search.toLowerCase()) ||
       user.lastName.toLowerCase().includes(search.toLowerCase()) ||
       user.email.toLowerCase().includes(search.toLowerCase());
-
     const matchesRole = filterRole === "ALL" || user.role === filterRole;
-
     return matchesSearch && matchesRole;
   });
 
-  if (loading) return <div className="loading">Loading users...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <div style={styles.container}>
-      <div className="page-header">
-        <h1 className="page-title">Manage Users</h1>
-        <span style={styles.count}>{filteredUsers.length} users</span>
-      </div>
-
-      {error && <div className="alert alert-error">{error}</div>}
-
-      {/* Search and Filter */}
-      <div style={styles.toolbar}>
-        <input
-          type="text"
-          placeholder="Search by name or email..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={styles.searchInput}
+    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          Manage Users
+        </Typography>
+        <Chip
+          label={`${filteredUsers.length} users`}
+          color="primary"
+          variant="outlined"
         />
-        <div style={styles.filterRow}>
-          {["ALL", "ROLE_CUSTOMER", "ROLE_ADMIN", "ROLE_AGENT"].map((role) => (
-            <button
-              key={role}
-              onClick={() => setFilterRole(role)}
-              style={{
-                ...styles.filterBtn,
-                backgroundColor: filterRole === role ? "#2563eb" : "white",
-                color: filterRole === role ? "white" : "#475569",
-              }}
-            >
-              {role === "ALL"
-                ? "All"
-                : role === "ROLE_CUSTOMER"
-                  ? "Customers"
-                  : role === "ROLE_ADMIN"
-                    ? "Admins"
-                    : "Agents"}
-            </button>
-          ))}
-        </div>
-      </div>
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Search */}
+      <TextField
+        placeholder="Search by name or email..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        size="small"
+        sx={{ mb: 2, width: "100%", maxWidth: 400 }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <Search fontSize="small" color="action" />
+            </InputAdornment>
+          ),
+        }}
+      />
+
+      {/* Role Filter */}
+      <ToggleButtonGroup
+        value={filterRole}
+        exclusive
+        onChange={(e, val) => val && setFilterRole(val)}
+        sx={{ mb: 3 }}
+        size="small"
+      >
+        <ToggleButton value="ALL">All</ToggleButton>
+        <ToggleButton value="ROLE_CUSTOMER">Customers</ToggleButton>
+        <ToggleButton value="ROLE_ADMIN">Admins</ToggleButton>
+        <ToggleButton value="ROLE_AGENT">Agents</ToggleButton>
+      </ToggleButtonGroup>
 
       {/* Users Table */}
-      <div className="card">
-        {filteredUsers.length === 0 ? (
-          <div className="empty-state">
-            <h3>No users found</h3>
-            <p>Try a different search or filter</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td>#{user.id}</td>
-                    <td>
-                      <div style={styles.nameCell}>
-                        <div style={styles.avatar}>
-                          {user.firstName[0]}
-                          {user.lastName[0]}
-                        </div>
-                        <span>
-                          {user.firstName} {user.lastName}
-                        </span>
-                      </div>
-                    </td>
-                    <td>{user.email}</td>
-                    <td>{user.phoneNumber}</td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          user.role === "ROLE_ADMIN"
-                            ? "badge-danger"
-                            : user.role === "ROLE_AGENT"
-                              ? "badge-warning"
-                              : "badge-info"
-                        }`}
-                      >
-                        {user.role === "ROLE_ADMIN"
-                          ? "Admin"
-                          : user.role === "ROLE_AGENT"
-                            ? "Agent"
-                            : "Customer"}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          user.enabled ? "badge-success" : "badge-danger"
-                        }`}
-                      >
-                        {user.enabled ? "Active" : "Disabled"}
-                      </span>
-                    </td>
-                    <td>{new Date(user.createdAt).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+      <Card>
+        <CardContent>
+          {filteredUsers.length === 0 ? (
+            <Box textAlign="center" py={6}>
+              <People sx={{ fontSize: 60, color: "text.disabled", mb: 2 }} />
+              <Typography color="text.secondary">No users found</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Try a different search or filter
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>User</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Phone</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Joined</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredUsers.map((user) => {
+                    const fullName = `${user.firstName} ${user.lastName}`;
+                    const avatarColor = stringToColor(fullName);
+                    return (
+                      <TableRow key={user.id} hover>
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={1.5}>
+                            <Avatar
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                bgcolor: avatarColor,
+                                fontSize: 13,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {user.firstName?.[0]}
+                              {user.lastName?.[0]}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body2" fontWeight={600}>
+                                {fullName}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                #{user.id}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>{user.phoneNumber}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={getRoleLabel(user.role)}
+                            size="small"
+                            color={getRoleColor(user.role)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.enabled ? "Active" : "Disabled"}
+                            size="small"
+                            color={user.enabled ? "success" : "error"}
+                            variant={user.enabled ? "filled" : "outlined"}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
-};
-
-const styles = {
-  container: { padding: "24px", maxWidth: "1200px", margin: "0 auto" },
-  count: {
-    backgroundColor: "#e2e8f0",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    fontSize: "14px",
-    color: "#475569",
-  },
-  toolbar: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    marginBottom: "20px",
-  },
-  searchInput: {
-    padding: "10px 16px",
-    border: "1px solid #e2e8f0",
-    borderRadius: "8px",
-    fontSize: "14px",
-    outline: "none",
-    width: "100%",
-    maxWidth: "400px",
-  },
-  filterRow: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-  filterBtn: {
-    padding: "6px 14px",
-    border: "1px solid #e2e8f0",
-    borderRadius: "20px",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontWeight: "500",
-    transition: "all 0.2s",
-  },
-  nameCell: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  avatar: {
-    width: "32px",
-    height: "32px",
-    borderRadius: "50%",
-    backgroundColor: "#2563eb",
-    color: "white",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "12px",
-    fontWeight: "600",
-    flexShrink: 0,
-  },
 };
 
 export default AdminUsers;

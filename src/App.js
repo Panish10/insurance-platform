@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { AuthProvider } from "./context/AuthContext";
 import PrivateRoute from "./components/common/PrivateRoute";
 import Navbar from "./components/common/Navbar";
@@ -20,15 +21,50 @@ import AdminPolicies from "./pages/admin/AdminPolicies";
 import AdminClaims from "./pages/admin/AdminClaims";
 import AdminUsers from "./pages/admin/AdminUsers";
 
-import "./styles/global.css";
+const theme = createTheme({
+  palette: {
+    primary: { main: "#1976d2" },
+    secondary: { main: "#9c27b0" },
+    success: { main: "#2e7d32" },
+    error: { main: "#d32f2f" },
+    warning: { main: "#ed6c02" },
+    background: { default: "#f0f2f5" },
+  },
+  typography: {
+    fontFamily: '"Segoe UI", Roboto, sans-serif',
+    h4: { fontWeight: 700 },
+    h6: { fontWeight: 600 },
+  },
+  shape: { borderRadius: 8 },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: { textTransform: "none", fontWeight: 600 },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: { boxShadow: "0 1px 3px rgba(0,0,0,0.12)" },
+      },
+    },
+    MuiTableHead: {
+      styleOverrides: {
+        root: { backgroundColor: "#f8fafc" },
+      },
+    },
+  },
+});
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <BrowserRouter>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
@@ -37,14 +73,10 @@ function AppContent() {
     <>
       <Navbar />
       <Routes>
-        {/* Default redirect */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-
-        {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* Customer routes */}
         <Route
           path="/customer/dashboard"
           element={
@@ -78,7 +110,6 @@ function AppContent() {
           }
         />
 
-        {/* Admin routes */}
         <Route
           path="/admin/dashboard"
           element={
@@ -112,7 +143,6 @@ function AppContent() {
           }
         />
 
-        {/* Catch all */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </>

@@ -1,5 +1,41 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  CircularProgress,
+  ToggleButton,
+  ToggleButtonGroup,
+} from "@mui/material";
+import { Assignment } from "@mui/icons-material";
 import { getAllClaims, updateClaimStatus } from "../../api/claimsApi";
+
+const getStatusColor = (status) => {
+  const map = {
+    PENDING: "warning",
+    UNDER_REVIEW: "info",
+    APPROVED: "success",
+    REJECTED: "error",
+    PAID: "success",
+  };
+  return map[status] || "default";
+};
 
 const AdminClaims = () => {
   const [claims, setClaims] = useState([]);
@@ -19,7 +55,7 @@ const AdminClaims = () => {
     try {
       const res = await getAllClaims();
       setClaims(res.data.data || []);
-    } catch (err) {
+    } catch {
       setError("Failed to load claims");
     } finally {
       setLoading(false);
@@ -27,7 +63,7 @@ const AdminClaims = () => {
   };
 
   const handleUpdateStatus = async (claimId, status) => {
-    setUpdating(claimId);
+    setUpdating(claimId + status);
     setMessage("");
     setError("");
     try {
@@ -43,203 +79,221 @@ const AdminClaims = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const map = {
-      PENDING: "badge-warning",
-      UNDER_REVIEW: "badge-info",
-      APPROVED: "badge-success",
-      REJECTED: "badge-danger",
-      PAID: "badge-success",
-    };
-    return map[status] || "badge-gray";
-  };
-
   const filteredClaims =
     filterStatus === "ALL"
       ? claims
       : claims.filter((c) => c.status === filterStatus);
 
-  if (loading) return <div className="loading">Loading claims...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <div style={styles.container}>
-      <div className="page-header">
-        <h1 className="page-title">Manage Claims</h1>
-        <span style={styles.count}>{filteredClaims.length} claims</span>
-      </div>
+    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          Manage Claims
+        </Typography>
+        <Chip
+          label={`${filteredClaims.length} claims`}
+          color="primary"
+          variant="outlined"
+        />
+      </Box>
 
-      {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-error">{error}</div>}
-
-      {/* Filter */}
-      <div style={styles.filterRow}>
-        {["ALL", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "PAID"].map(
-          (status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              style={{
-                ...styles.filterBtn,
-                backgroundColor: filterStatus === status ? "#2563eb" : "white",
-                color: filterStatus === status ? "white" : "#475569",
-              }}
-            >
-              {status}
-            </button>
-          ),
-        )}
-      </div>
-
-      {/* Review Panel */}
-      {selectedClaim && (
-        <div className="card" style={{ borderLeft: "4px solid #f59e0b" }}>
-          <div className="card-title">
-            Review Claim #{selectedClaim.id} — {selectedClaim.title}
-          </div>
-          <p style={{ color: "#64748b", marginBottom: "12px" }}>
-            {selectedClaim.description}
-          </p>
-          <p style={{ marginBottom: "16px" }}>
-            <strong>Amount:</strong> ₹{selectedClaim.claimAmount}
-          </p>
-          <div className="form-group">
-            <label>Review Notes / Rejection Reason</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add notes for the customer..."
-              rows={3}
-              style={{ resize: "vertical" }}
-            />
-          </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <button
-              className="btn btn-success"
-              onClick={() => handleUpdateStatus(selectedClaim.id, "APPROVED")}
-              disabled={updating === selectedClaim.id}
-            >
-              ✅ Approve
-            </button>
-            <button
-              className="btn"
-              style={{ backgroundColor: "#0891b2", color: "white" }}
-              onClick={() =>
-                handleUpdateStatus(selectedClaim.id, "UNDER_REVIEW")
-              }
-              disabled={updating === selectedClaim.id}
-            >
-              🔍 Under Review
-            </button>
-            <button
-              className="btn btn-danger"
-              onClick={() => handleUpdateStatus(selectedClaim.id, "REJECTED")}
-              disabled={updating === selectedClaim.id}
-            >
-              ❌ Reject
-            </button>
-            <button
-              className="btn btn-success"
-              onClick={() => handleUpdateStatus(selectedClaim.id, "PAID")}
-              disabled={updating === selectedClaim.id}
-            >
-              💰 Mark as Paid
-            </button>
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                setSelectedClaim(null);
-                setNotes("");
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+      {message && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMessage("")}>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
       )}
 
-      {/* Claims Table */}
-      <div className="card">
-        {filteredClaims.length === 0 ? (
-          <div className="empty-state">
-            <h3>No claims found</h3>
-            <p>No claims with status {filterStatus}</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Title</th>
-                  <th>User ID</th>
-                  <th>Policy ID</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Filed On</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredClaims.map((claim) => (
-                  <tr key={claim.id}>
-                    <td>#{claim.id}</td>
-                    <td>{claim.title}</td>
-                    <td>{claim.userId}</td>
-                    <td>{claim.policyId}</td>
-                    <td>₹{claim.claimAmount}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadge(claim.status)}`}>
-                        {claim.status}
-                      </span>
-                    </td>
-                    <td>{new Date(claim.createdAt).toLocaleDateString()}</td>
-                    <td>
-                      <button
-                        className="btn btn-primary"
-                        style={{ padding: "5px 12px", fontSize: "12px" }}
-                        onClick={() => {
-                          setSelectedClaim(claim);
-                          setNotes("");
-                        }}
-                      >
-                        Review
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* Filter Buttons */}
+      <ToggleButtonGroup
+        value={filterStatus}
+        exclusive
+        onChange={(e, val) => val && setFilterStatus(val)}
+        sx={{ mb: 3, flexWrap: "wrap", gap: 0.5 }}
+        size="small"
+      >
+        {["ALL", "PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "PAID"].map(
+          (status) => (
+            <ToggleButton key={status} value={status} sx={{ px: 2 }}>
+              {status}
+            </ToggleButton>
+          ),
         )}
-      </div>
-    </div>
-  );
-};
+      </ToggleButtonGroup>
 
-const styles = {
-  container: { padding: "24px", maxWidth: "1200px", margin: "0 auto" },
-  count: {
-    backgroundColor: "#e2e8f0",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    fontSize: "14px",
-    color: "#475569",
-  },
-  filterRow: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-    marginBottom: "20px",
-  },
-  filterBtn: {
-    padding: "6px 14px",
-    border: "1px solid #e2e8f0",
-    borderRadius: "20px",
-    cursor: "pointer",
-    fontSize: "12px",
-    fontWeight: "500",
-    transition: "all 0.2s",
-  },
+      {/* Review Dialog */}
+      <Dialog
+        open={Boolean(selectedClaim)}
+        onClose={() => {
+          setSelectedClaim(null);
+          setNotes("");
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Review Claim #{selectedClaim?.id}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="subtitle1" fontWeight={600} mb={0.5}>
+            {selectedClaim?.title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={1}>
+            {selectedClaim?.description}
+          </Typography>
+          <Typography variant="body2" mb={2}>
+            <strong>Amount:</strong> ₹{selectedClaim?.claimAmount}
+          </Typography>
+          <TextField
+            fullWidth
+            label="Review Notes / Rejection Reason"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Add notes for the customer..."
+            multiline
+            rows={3}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 3, pt: 0, gap: 1, flexWrap: "wrap" }}>
+          <Button
+            variant="contained"
+            color="success"
+            disabled={updating === selectedClaim?.id + "APPROVED"}
+            onClick={() => handleUpdateStatus(selectedClaim.id, "APPROVED")}
+          >
+            ✅ Approve
+          </Button>
+          <Button
+            variant="contained"
+            sx={{
+              backgroundColor: "#0891b2",
+              "&:hover": { backgroundColor: "#0e7490" },
+            }}
+            disabled={updating === selectedClaim?.id + "UNDER_REVIEW"}
+            onClick={() => handleUpdateStatus(selectedClaim.id, "UNDER_REVIEW")}
+          >
+            🔍 Under Review
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={updating === selectedClaim?.id + "REJECTED"}
+            onClick={() => handleUpdateStatus(selectedClaim.id, "REJECTED")}
+          >
+            ❌ Reject
+          </Button>
+          <Button
+            variant="contained"
+            color="success"
+            disabled={updating === selectedClaim?.id + "PAID"}
+            onClick={() => handleUpdateStatus(selectedClaim.id, "PAID")}
+          >
+            💰 Mark Paid
+          </Button>
+          <Button
+            variant="outlined"
+            color="inherit"
+            onClick={() => {
+              setSelectedClaim(null);
+              setNotes("");
+            }}
+          >
+            Cancel
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Claims Table */}
+      <Card>
+        <CardContent>
+          {filteredClaims.length === 0 ? (
+            <Box textAlign="center" py={6}>
+              <Assignment
+                sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+              />
+              <Typography color="text.secondary">
+                No claims with status {filterStatus}
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Title</TableCell>
+                    <TableCell>User ID</TableCell>
+                    <TableCell>Policy ID</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Filed On</TableCell>
+                    <TableCell>Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredClaims.map((claim) => (
+                    <TableRow key={claim.id} hover>
+                      <TableCell>#{claim.id}</TableCell>
+                      <TableCell>
+                        <Typography fontWeight={500}>{claim.title}</Typography>
+                      </TableCell>
+                      <TableCell>{claim.userId}</TableCell>
+                      <TableCell>{claim.policyId}</TableCell>
+                      <TableCell>₹{claim.claimAmount}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={claim.status}
+                          size="small"
+                          color={getStatusColor(claim.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(claim.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => {
+                            setSelectedClaim(claim);
+                            setNotes("");
+                          }}
+                        >
+                          Review
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
+  );
 };
 
 export default AdminClaims;

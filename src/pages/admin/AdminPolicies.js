@@ -1,5 +1,32 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  Grid,
+  CircularProgress,
+} from "@mui/material";
+import { Add, Policy } from "@mui/icons-material";
 import { getAllPolicies, createPolicy } from "../../api/policyApi";
+
+const POLICY_TYPES = ["HEALTH", "LIFE", "VEHICLE", "HOME", "TRAVEL"];
 
 const AdminPolicies = () => {
   const [policies, setPolicies] = useState([]);
@@ -26,7 +53,7 @@ const AdminPolicies = () => {
     try {
       const res = await getAllPolicies();
       setPolicies(res.data.data || []);
-    } catch (err) {
+    } catch {
       setError("Failed to load policies");
     } finally {
       setLoading(false);
@@ -67,178 +94,230 @@ const AdminPolicies = () => {
     }
   };
 
-  if (loading) return <div className="loading">Loading policies...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <div style={styles.container}>
-      <div className="page-header">
-        <h1 className="page-title">Manage Policies</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowForm(!showForm)}
+    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          Manage Policies
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowForm(true)}
         >
-          {showForm ? "Cancel" : "+ Create Policy"}
-        </button>
-      </div>
+          Create Policy
+        </Button>
+      </Box>
 
-      {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-error">{error}</div>}
+      {message && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMessage("")}>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
 
-      {/* Create Policy Form */}
-      {showForm && (
-        <div className="card">
-          <div className="card-title">Create New Policy</div>
-          <form onSubmit={handleSubmit}>
-            <div className="grid-2">
-              <div className="form-group">
-                <label>Policy Name</label>
-                <input
-                  type="text"
+      {/* Create Policy Dialog */}
+      <Dialog
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>Create New Policy</DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent sx={{ pt: 1 }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Policy Name"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="e.g. Basic Health Plan"
                   required
                 />
-              </div>
-              <div className="form-group">
-                <label>Policy Type</label>
-                <select
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  select
+                  label="Policy Type"
                   name="policyType"
                   value={formData.policyType}
                   onChange={handleChange}
+                  required
                 >
-                  <option value="HEALTH">Health</option>
-                  <option value="LIFE">Life</option>
-                  <option value="VEHICLE">Vehicle</option>
-                  <option value="HOME">Home</option>
-                  <option value="TRAVEL">Travel</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Monthly Premium (₹)</label>
-                <input
-                  type="number"
+                  {POLICY_TYPES.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Monthly Premium (₹)"
                   name="premium"
+                  type="number"
                   value={formData.premium}
                   onChange={handleChange}
                   placeholder="e.g. 500"
                   required
                 />
-              </div>
-              <div className="form-group">
-                <label>Coverage Amount (₹)</label>
-                <input
-                  type="number"
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  label="Coverage Amount (₹)"
                   name="coverageAmount"
+                  type="number"
                   value={formData.coverageAmount}
                   onChange={handleChange}
                   placeholder="e.g. 100000"
                   required
                 />
-              </div>
-              <div className="form-group">
-                <label>Duration (months)</label>
-                <input
-                  type="number"
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Duration (months)"
                   name="durationMonths"
+                  type="number"
                   value={formData.durationMonths}
                   onChange={handleChange}
                   placeholder="e.g. 12"
                   required
                 />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe this policy..."
-                rows={3}
-                style={{ resize: "vertical" }}
-              />
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                type="submit"
-                className="btn btn-success"
-                disabled={submitting}
-              >
-                {submitting ? "Creating..." : "Create Policy"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  placeholder="Describe this policy..."
+                  multiline
+                  rows={3}
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0, gap: 1 }}>
+            <Button
+              onClick={() => setShowForm(false)}
+              variant="outlined"
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              color="success"
+              disabled={submitting}
+              startIcon={
+                submitting ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {submitting ? "Creating..." : "Create Policy"}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
       {/* Policies Table */}
-      <div className="card">
-        <div className="card-title">All Policies ({policies.length})</div>
-        {policies.length === 0 ? (
-          <div className="empty-state">
-            <h3>No policies created yet</h3>
-            <p>Click "Create Policy" to add the first policy</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Premium</th>
-                  <th>Coverage</th>
-                  <th>Duration</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {policies.map((policy) => (
-                  <tr key={policy.id}>
-                    <td>#{policy.id}</td>
-                    <td>{policy.name}</td>
-                    <td>
-                      <span className="badge badge-info">
-                        {policy.policyType}
-                      </span>
-                    </td>
-                    <td>₹{policy.premium}/mo</td>
-                    <td>₹{policy.coverageAmount}</td>
-                    <td>{policy.durationMonths} months</td>
-                    <td>
-                      <span
-                        className={`badge ${
-                          policy.status === "ACTIVE"
-                            ? "badge-success"
-                            : "badge-danger"
-                        }`}
-                      >
-                        {policy.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" mb={2}>
+            All Policies ({policies.length})
+          </Typography>
+          {policies.length === 0 ? (
+            <Box textAlign="center" py={6}>
+              <Policy sx={{ fontSize: 60, color: "text.disabled", mb: 2 }} />
+              <Typography color="text.secondary">No policies yet</Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Type</TableCell>
+                    <TableCell>Premium</TableCell>
+                    <TableCell>Coverage</TableCell>
+                    <TableCell>Duration</TableCell>
+                    <TableCell>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {policies.map((policy) => (
+                    <TableRow key={policy.id} hover>
+                      <TableCell>#{policy.id}</TableCell>
+                      <TableCell>
+                        <Typography fontWeight={500}>{policy.name}</Typography>
+                        {policy.description && (
+                          <Typography variant="caption" color="text.secondary">
+                            {policy.description}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={policy.policyType}
+                          size="small"
+                          color="info"
+                        />
+                      </TableCell>
+                      <TableCell>₹{policy.premium}/mo</TableCell>
+                      <TableCell>₹{policy.coverageAmount}</TableCell>
+                      <TableCell>{policy.durationMonths} months</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={policy.status}
+                          size="small"
+                          color={
+                            policy.status === "ACTIVE" ? "success" : "error"
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
-};
-
-const styles = {
-  container: { padding: "24px", maxWidth: "1200px", margin: "0 auto" },
 };
 
 export default AdminPolicies;

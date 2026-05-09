@@ -1,5 +1,39 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Chip,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  CircularProgress,
+} from "@mui/material";
+import { Add, Assignment } from "@mui/icons-material";
 import { getMyClaims, submitClaim } from "../../api/claimsApi";
+
+const getStatusColor = (status) => {
+  const map = {
+    PENDING: "warning",
+    UNDER_REVIEW: "info",
+    APPROVED: "success",
+    REJECTED: "error",
+    PAID: "success",
+  };
+  return map[status] || "default";
+};
 
 const MyClaims = () => {
   const [claims, setClaims] = useState([]);
@@ -24,7 +58,7 @@ const MyClaims = () => {
     try {
       const res = await getMyClaims();
       setClaims(res.data.data || []);
-    } catch (err) {
+    } catch {
       setError("Failed to load claims");
     } finally {
       setLoading(false);
@@ -62,155 +96,189 @@ const MyClaims = () => {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const map = {
-      PENDING: "badge-warning",
-      UNDER_REVIEW: "badge-info",
-      APPROVED: "badge-success",
-      REJECTED: "badge-danger",
-      PAID: "badge-success",
-    };
-    return map[status] || "badge-gray";
-  };
-
-  if (loading) return <div className="loading">Loading claims...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <div style={styles.container}>
-      <div className="page-header">
-        <h1 className="page-title">My Claims</h1>
-        <button
-          className="btn btn-primary"
-          onClick={() => setShowForm(!showForm)}
+    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography variant="h4" fontWeight={700}>
+          My Claims
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setShowForm(true)}
         >
-          {showForm ? "Cancel" : "+ File New Claim"}
-        </button>
-      </div>
+          File New Claim
+        </Button>
+      </Box>
 
-      {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-error">{error}</div>}
-
-      {/* Submit Claim Form */}
-      {showForm && (
-        <div className="card">
-          <div className="card-title">File a New Claim</div>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Policy ID</label>
-              <input
-                type="number"
-                name="policyId"
-                value={formData.policyId}
-                onChange={handleChange}
-                placeholder="Enter your policy ID"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Claim Title</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="e.g. Hospital admission claim"
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                placeholder="Describe your claim in detail..."
-                rows={4}
-                required
-                style={{ resize: "vertical" }}
-              />
-            </div>
-            <div className="form-group">
-              <label>Claim Amount (₹)</label>
-              <input
-                type="number"
-                name="claimAmount"
-                value={formData.claimAmount}
-                onChange={handleChange}
-                placeholder="e.g. 5000"
-                required
-              />
-            </div>
-            <div style={{ display: "flex", gap: "12px" }}>
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={submitting}
-              >
-                {submitting ? "Submitting..." : "Submit Claim"}
-              </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setShowForm(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
+      {message && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMessage("")}>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
       )}
 
-      {/* Claims List */}
-      <div className="card">
-        <div className="card-title">Claims History</div>
-        {claims.length === 0 ? (
-          <div className="empty-state">
-            <h3>No claims filed yet</h3>
-            <p>Click "File New Claim" to submit your first claim</p>
-          </div>
-        ) : (
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Title</th>
-                  <th>Policy ID</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Filed On</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {claims.map((claim) => (
-                  <tr key={claim.id}>
-                    <td>#{claim.id}</td>
-                    <td>{claim.title}</td>
-                    <td>{claim.policyId}</td>
-                    <td>₹{claim.claimAmount}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadge(claim.status)}`}>
-                        {claim.status}
-                      </span>
-                    </td>
-                    <td>{new Date(claim.createdAt).toLocaleDateString()}</td>
-                    <td style={{ color: "#64748b", fontSize: "13px" }}>
-                      {claim.rejectionReason || claim.reviewNotes || "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+      {/* Submit Claim Dialog */}
+      <Dialog
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>File a New Claim</DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent
+            sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}
+          >
+            <TextField
+              label="Policy ID"
+              name="policyId"
+              type="number"
+              value={formData.policyId}
+              onChange={handleChange}
+              placeholder="Enter your policy ID"
+              required
+              fullWidth
+            />
+            <TextField
+              label="Claim Title"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              placeholder="e.g. Hospital admission claim"
+              required
+              fullWidth
+            />
+            <TextField
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Describe your claim in detail..."
+              required
+              fullWidth
+              multiline
+              rows={4}
+            />
+            <TextField
+              label="Claim Amount (₹)"
+              name="claimAmount"
+              type="number"
+              value={formData.claimAmount}
+              onChange={handleChange}
+              placeholder="e.g. 5000"
+              required
+              fullWidth
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3, pt: 0, gap: 1 }}>
+            <Button
+              onClick={() => setShowForm(false)}
+              variant="outlined"
+              color="inherit"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={submitting}
+              startIcon={
+                submitting ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : null
+              }
+            >
+              {submitting ? "Submitting..." : "Submit Claim"}
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
 
-const styles = {
-  container: { padding: "24px", maxWidth: "1200px", margin: "0 auto" },
+      {/* Claims Table */}
+      <Card>
+        <CardContent>
+          <Typography variant="h6" mb={2}>
+            Claims History
+          </Typography>
+          {claims.length === 0 ? (
+            <Box textAlign="center" py={6}>
+              <Assignment
+                sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+              />
+              <Typography variant="h6" color="text.secondary">
+                No claims filed yet
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Click "File New Claim" to submit your first claim
+              </Typography>
+            </Box>
+          ) : (
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>ID</TableCell>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Policy ID</TableCell>
+                    <TableCell>Amount</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Filed On</TableCell>
+                    <TableCell>Notes</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {claims.map((claim) => (
+                    <TableRow key={claim.id} hover>
+                      <TableCell>#{claim.id}</TableCell>
+                      <TableCell>{claim.title}</TableCell>
+                      <TableCell>{claim.policyId}</TableCell>
+                      <TableCell>₹{claim.claimAmount}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={claim.status}
+                          size="small"
+                          color={getStatusColor(claim.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(claim.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell sx={{ color: "text.secondary", fontSize: 13 }}>
+                        {claim.rejectionReason || claim.reviewNotes || "-"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
+  );
 };
 
 export default MyClaims;

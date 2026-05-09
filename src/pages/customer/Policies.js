@@ -1,5 +1,47 @@
 import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Chip,
+  Alert,
+  CircularProgress,
+  Divider,
+} from "@mui/material";
+import {
+  HealthAndSafety,
+  DirectionsCar,
+  Home,
+  Flight,
+  Favorite,
+  CheckCircle,
+} from "@mui/icons-material";
 import { getActivePolicies, subscribeToPolicy } from "../../api/policyApi";
+
+const getPolicyIcon = (type) => {
+  const map = {
+    HEALTH: <HealthAndSafety sx={{ fontSize: 40, color: "#2e7d32" }} />,
+    VEHICLE: <DirectionsCar sx={{ fontSize: 40, color: "#1976d2" }} />,
+    HOME: <Home sx={{ fontSize: 40, color: "#ed6c02" }} />,
+    TRAVEL: <Flight sx={{ fontSize: 40, color: "#9c27b0" }} />,
+    LIFE: <Favorite sx={{ fontSize: 40, color: "#d32f2f" }} />,
+  };
+  return map[type] || <HealthAndSafety sx={{ fontSize: 40 }} />;
+};
+
+const getPolicyColor = (type) => {
+  const map = {
+    HEALTH: "#2e7d32",
+    VEHICLE: "#1976d2",
+    HOME: "#ed6c02",
+    TRAVEL: "#9c27b0",
+    LIFE: "#d32f2f",
+  };
+  return map[type] || "#1976d2";
+};
 
 const Policies = () => {
   const [policies, setPolicies] = useState([]);
@@ -16,7 +58,7 @@ const Policies = () => {
     try {
       const res = await getActivePolicies();
       setPolicies(res.data.data || []);
-    } catch (err) {
+    } catch {
       setError("Failed to load policies");
     } finally {
       setLoading(false);
@@ -37,126 +79,181 @@ const Policies = () => {
     }
   };
 
-  if (loading) return <div className="loading">Loading policies...</div>;
+  if (loading)
+    return (
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="60vh"
+      >
+        <CircularProgress />
+      </Box>
+    );
 
   return (
-    <div style={styles.container}>
-      <div className="page-header">
-        <h1 className="page-title">Available Policies</h1>
-      </div>
+    <Box sx={{ p: 3, maxWidth: 1200, mx: "auto" }}>
+      <Typography variant="h4" fontWeight={700} mb={3}>
+        Available Policies
+      </Typography>
 
-      {message && <div className="alert alert-success">{message}</div>}
-      {error && <div className="alert alert-error">{error}</div>}
+      {message && (
+        <Alert severity="success" sx={{ mb: 2 }} onClose={() => setMessage("")}>
+          {message}
+        </Alert>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError("")}>
+          {error}
+        </Alert>
+      )}
 
-      <div className="grid-2">
-        {policies.length === 0 ? (
-          <div className="empty-state">
-            <h3>No active policies available</h3>
-            <p>Check back later for new policies</p>
-          </div>
-        ) : (
-          policies.map((policy) => (
-            <div key={policy.id} style={styles.policyCard}>
-              <div style={styles.policyHeader}>
-                <div>
-                  <h3 style={styles.policyName}>{policy.name}</h3>
-                  <span
-                    className={`badge ${
-                      policy.policyType === "HEALTH"
-                        ? "badge-success"
-                        : policy.policyType === "LIFE"
-                          ? "badge-info"
-                          : policy.policyType === "VEHICLE"
-                            ? "badge-warning"
-                            : "badge-gray"
-                    }`}
-                  >
-                    {policy.policyType}
-                  </span>
-                </div>
-                <div style={styles.premium}>
-                  <span style={styles.premiumAmount}>₹{policy.premium}</span>
-                  <span style={styles.premiumLabel}>/month</span>
-                </div>
-              </div>
+      {policies.length === 0 ? (
+        <Card>
+          <CardContent sx={{ textAlign: "center", py: 6 }}>
+            <Typography color="text.secondary">
+              No active policies available
+            </Typography>
+          </CardContent>
+        </Card>
+      ) : (
+        <Grid container spacing={3}>
+          {policies.map((policy) => {
+            const color = getPolicyColor(policy.policyType);
+            return (
+              <Grid item xs={12} sm={6} md={4} key={policy.id}>
+                <Card
+                  sx={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    border: `1px solid ${color}30`,
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-2px)",
+                      transition: "all 0.2s",
+                    },
+                  }}
+                >
+                  <CardContent sx={{ flex: 1 }}>
+                    {/* Icon + Type */}
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="flex-start"
+                      mb={2}
+                    >
+                      <Box
+                        sx={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: 2,
+                          backgroundColor: `${color}15`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {getPolicyIcon(policy.policyType)}
+                      </Box>
+                      <Chip
+                        label={policy.policyType}
+                        size="small"
+                        sx={{ backgroundColor: `${color}15`, color }}
+                      />
+                    </Box>
 
-              {policy.description && (
-                <p style={styles.description}>{policy.description}</p>
-              )}
+                    {/* Name */}
+                    <Typography variant="h6" fontWeight={600} mb={0.5}>
+                      {policy.name}
+                    </Typography>
 
-              <div style={styles.details}>
-                <div style={styles.detailItem}>
-                  <span style={styles.detailLabel}>Coverage</span>
-                  <span style={styles.detailValue}>
-                    ₹{policy.coverageAmount}
-                  </span>
-                </div>
-                <div style={styles.detailItem}>
-                  <span style={styles.detailLabel}>Duration</span>
-                  <span style={styles.detailValue}>
-                    {policy.durationMonths} months
-                  </span>
-                </div>
-                <div style={styles.detailItem}>
-                  <span style={styles.detailLabel}>Status</span>
-                  <span className="badge badge-success">{policy.status}</span>
-                </div>
-              </div>
+                    {/* Premium */}
+                    <Box display="flex" alignItems="baseline" gap={0.5} mb={1}>
+                      <Typography variant="h4" fontWeight={700} color="primary">
+                        ₹{policy.premium}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        /month
+                      </Typography>
+                    </Box>
 
-              <button
-                className="btn btn-primary"
-                style={{ width: "100%", marginTop: "16px" }}
-                onClick={() => handleSubscribe(policy.id, policy.name)}
-                disabled={subscribing === policy.id}
-              >
-                {subscribing === policy.id ? "Subscribing..." : "Subscribe Now"}
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+                    {policy.description && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        mb={2}
+                        sx={{ lineHeight: 1.6 }}
+                      >
+                        {policy.description}
+                      </Typography>
+                    )}
+
+                    <Divider sx={{ my: 1.5 }} />
+
+                    {/* Details */}
+                    <Box display="flex" flexDirection="column" gap={1}>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">
+                          Coverage
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          ₹{policy.coverageAmount}
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">
+                          Duration
+                        </Typography>
+                        <Typography variant="body2" fontWeight={600}>
+                          {policy.durationMonths} months
+                        </Typography>
+                      </Box>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">
+                          Status
+                        </Typography>
+                        <Chip
+                          label={policy.status}
+                          size="small"
+                          color="success"
+                        />
+                      </Box>
+                    </Box>
+                  </CardContent>
+
+                  {/* Subscribe Button */}
+                  <Box sx={{ p: 2, pt: 0 }}>
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      startIcon={
+                        subscribing === policy.id ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <CheckCircle />
+                        )
+                      }
+                      disabled={subscribing === policy.id}
+                      onClick={() => handleSubscribe(policy.id, policy.name)}
+                      sx={{
+                        backgroundColor: color,
+                        "&:hover": { backgroundColor: color, opacity: 0.9 },
+                      }}
+                    >
+                      {subscribing === policy.id
+                        ? "Subscribing..."
+                        : "Subscribe Now"}
+                    </Button>
+                  </Box>
+                </Card>
+              </Grid>
+            );
+          })}
+        </Grid>
+      )}
+    </Box>
   );
-};
-
-const styles = {
-  container: { padding: "24px", maxWidth: "1200px", margin: "0 auto" },
-  policyCard: {
-    backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "24px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    border: "1px solid #e2e8f0",
-  },
-  policyHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "12px",
-  },
-  policyName: {
-    fontSize: "18px",
-    fontWeight: "600",
-    color: "#1e293b",
-    marginBottom: "6px",
-  },
-  premium: { textAlign: "right" },
-  premiumAmount: { fontSize: "24px", fontWeight: "700", color: "#2563eb" },
-  premiumLabel: { fontSize: "13px", color: "#64748b", marginLeft: "2px" },
-  description: {
-    color: "#64748b",
-    fontSize: "14px",
-    marginBottom: "16px",
-    lineHeight: "1.5",
-  },
-  details: { display: "flex", flexDirection: "column", gap: "8px" },
-  detailItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  detailLabel: { fontSize: "13px", color: "#64748b" },
-  detailValue: { fontSize: "14px", fontWeight: "500", color: "#1e293b" },
 };
 
 export default Policies;

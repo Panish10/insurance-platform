@@ -1,5 +1,18 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  InputAdornment,
+  IconButton,
+} from "@mui/material";
+import { Shield, Visibility, VisibilityOff } from "@mui/icons-material";
 import { login as loginApi } from "../../api/authApi";
 import { useAuth } from "../../context/AuthContext";
 
@@ -7,12 +20,10 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -23,15 +34,10 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const response = await loginApi(formData);
       const { accessToken, user } = response.data.data;
-
-      // Save to context and localStorage
       login(user, accessToken);
-
-      // Redirect based on role
       if (user.role === "ROLE_ADMIN") {
         navigate("/admin/dashboard");
       } else {
@@ -45,102 +51,109 @@ const Login = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <div style={styles.logo}>🛡️</div>
-          <h1 style={styles.title}>Insurance Platform</h1>
-          <p style={styles.subtitle}>Sign in to your account</p>
-        </div>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "background.default",
+        p: 2,
+      }}
+    >
+      <Card sx={{ width: "100%", maxWidth: 420, borderRadius: 3 }}>
+        <CardContent sx={{ p: 4 }}>
+          {/* Header */}
+          <Box textAlign="center" mb={4}>
+            <Shield sx={{ fontSize: 56, color: "primary.main", mb: 1 }} />
+            <Typography variant="h5" fontWeight={700} color="text.primary">
+              Insurance Platform
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mt={0.5}>
+              Sign in to your account
+            </Typography>
+          </Box>
 
-        {error && <div className="alert alert-error">{error}</div>}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email Address</label>
-            <input
-              type="email"
+          <form onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Email Address"
               name="email"
+              type="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="panish@example.com"
+              placeholder="john@example.com"
               required
+              sx={{ mb: 2 }}
             />
-          </div>
 
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type="password"
+            <TextField
+              fullWidth
+              label="Password"
               name="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
               required
+              sx={{ mb: 3 }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-          </div>
 
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: "100%", padding: "12px", fontSize: "15px" }}
-            disabled={loading}
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              size="large"
+              disabled={loading}
+              sx={{ py: 1.5, fontSize: 15 }}
+            >
+              {loading ? (
+                <CircularProgress size={22} color="inherit" />
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </form>
+
+          <Typography
+            variant="body2"
+            textAlign="center"
+            mt={3}
+            color="text.secondary"
           >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
-
-        <p style={styles.registerLink}>
-          Don't have an account?{" "}
-          <Link to="/register" style={{ color: "#2563eb" }}>
-            Register here
-          </Link>
-        </p>
-      </div>
-    </div>
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              style={{
+                color: "#1976d2",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Register here
+            </Link>
+          </Typography>
+        </CardContent>
+      </Card>
+    </Box>
   );
-};
-
-const styles = {
-  container: {
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f0f2f5",
-  },
-  card: {
-    backgroundColor: "white",
-    borderRadius: "12px",
-    padding: "40px",
-    width: "100%",
-    maxWidth: "420px",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
-  },
-  header: {
-    textAlign: "center",
-    marginBottom: "32px",
-  },
-  logo: {
-    fontSize: "48px",
-    marginBottom: "12px",
-  },
-  title: {
-    fontSize: "24px",
-    fontWeight: "700",
-    color: "#1e293b",
-    marginBottom: "6px",
-  },
-  subtitle: {
-    color: "#64748b",
-    fontSize: "14px",
-  },
-  registerLink: {
-    textAlign: "center",
-    marginTop: "20px",
-    fontSize: "14px",
-    color: "#64748b",
-  },
 };
 
 export default Login;
