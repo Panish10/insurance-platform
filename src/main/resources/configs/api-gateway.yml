@@ -6,6 +6,20 @@ spring:
     web-application-type: reactive
   cloud:
     gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins:
+              - "http://localhost:3000"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers:
+              - "*"
+            allow-credentials: true
       routes:
         - id: user-service
           uri: lb://user-service
@@ -40,11 +54,6 @@ management:
     web:
       exposure:
         include: health,info
-
-logging:
-  level:
-    com.insurance: DEBUG
-    org.springframework.cloud.gateway: DEBUG
 
 jwt:
   secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
