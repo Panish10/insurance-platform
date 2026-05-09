@@ -35,6 +35,11 @@ public class AuthenticationFilter extends
     }
 
     @Override
+    public String name() {
+        return "Authentication";
+    }
+
+    @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
             ServerHttpRequest request = exchange.getRequest();
